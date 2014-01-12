@@ -98,7 +98,7 @@ Adding an API to the I/O Docs configuration is relatively simple.
 First, append the new top-level service information to the `./public/data/apiconfig.json` file.
 
 Example:
-   
+
 ```js
 "lowercaseapi": {
     "name": "Lower Case API",
@@ -117,7 +117,7 @@ Example:
 Add the file `./public/data/lowercaseapi.json` to define the API.
 
 Example:
-   
+
 ```js
 {
     "endpoints": [
@@ -194,7 +194,7 @@ The *apiconfig.json* file contains high-level information about an API.
 
 Line:
 
-1. Handle of the API. It is used to pull up the client 
+1. Handle of the API. It is used to pull up the client
    interface in the URL:
 
     Ex: http://127.0.0.1:3000/lower
@@ -248,14 +248,14 @@ Line:
    "signature": {
       "type": "signed_md5",
       "sigParam": "sig",
-      "digest": "hex"  
+      "digest": "hex"
    }
 }
 ```
 
 Line:
 
-1. Handle of the API. It is used to pull up the client 
+1. Handle of the API. It is used to pull up the client
    interface in the URL:
 
     Ex: http://127.0.0.1:3000/upper
@@ -289,7 +289,7 @@ Line:
 
 8. "signature" is a JSON object that contains the details about
    the API call signing requirements. The signature routine coded
-   in app.js is a hash of the string concatenation of API key, 
+   in app.js is a hash of the string concatenation of API key,
    API key secret and timestamp (epoch).
 
 9. "type" key value is either *signed_md5* or *signed_sha256*.
@@ -477,53 +477,79 @@ Line:
     required when "auth" value is "oauth".
 
 11. "type" key value is the OAuth 2 authorization flow
-    used for this API. Valid values are "authorization-code", 
+    used for this API. Valid values are "authorization-code",
     "client_credentials", and "implicit", named for each grant
-    found here: "http://tools.ietf.org/html/rfc6749". 
+    found here: "http://tools.ietf.org/html/rfc6749".
 
 12. "baseSite" key value is the base website URL used in
     the OAuth 2 dance. It is required.
 
-13. "authorizeURL" key value is the url string used to 
-    retrieve the authorization token in the 
-    "authorization-code" OAuth 2 flow. This is not necessary 
+13. "authorizeURL" key value is the url string used to
+    retrieve the authorization token in the
+    "authorization-code" OAuth 2 flow. This is not necessary
     in any other OAuth 2 flow.
 
-14. "accessTokenURL" key value is the url string used to 
+14. "accessTokenURL" key value is the url string used to
     retrieve the access (Bearer) token in any OAuth 2 flow.
-    This is required in all OAuth 2 flows. 
+    This is required in all OAuth 2 flows.
 
 15. "tokenName" key value if the API does not use "access_token"
-    as the default token name when making calls with the 
-    access token in the url query parameters. Not required if 
-    "access_token" is used. 
+    as the default token name when making calls with the
+    access token in the url query parameters. Not required if
+    "access_token" is used.
 
 16. "authorizationHeader" must by "Y" if the access (Bearer)
-    token is sent through the request header as 
+    token is sent through the request header as
     "Authorization: Bearer access_token". Only required if this
     is the case.
 
-17. Closing curly bracket for "oauth2" JSON object. 
+17. Closing curly bracket for "oauth2" JSON object.
 
 18. "keyParam" key value is blank when OAuth 2 is the authentication
     method.
 
 19. Closing curly bracket for main object.
 
-Additional Note: All redirect URIs for the Foursquare API & your 
-Foursqare app must be set through the Foursquare developer site. 
+Additional Note: All redirect URIs for the Foursquare API & your
+Foursqare app must be set through the Foursquare developer site.
 For the iodocs Foursquare API test these URIs are :
 "http://localhost:3000/foursquare", "http://localhost:3000/oauth2Success/foursquare"
 
-For the Rdio API test, beta access to their new API is necessary. 
+For the Rdio API test, beta access to their new API is necessary.
 The site for the beta API is: "http://www.rdio.com/developers/"
 
+### Example #5 - OAuth2 with password grant
 
+```js
+    "some-api": {
+        "name": "Some API",
+        "protocol": "http",
+        "baseURL": "0.0.0.0:8080",
+        "publicPath": "/v1",
+        "privatePath": "/v1",
+        "auth": "oauth2",
+        "oauth2": {
+            "defaultKey": "KEY",
+            "defaultSecret": "SECRET",
+            "defaultUsername": "email@email.me",
+            "defaultPassword": "test",
+            "type": "password",
+            "baseSite":"http://0.0.0.0:8080/",
+            "accessTokenURL": "oauth/token",
+            "authorizeURL": "oauth/authorize",
+            "customHeaders": "",
+            "authorizationHeader":"Y"
+        },
+        "keyParam":""
+    }
+```
+
+---
 
 API-LEVEL CONFIG DETAILS
 ========================
 For every API that is configured in *apiconfig.json* a JSON config file must exist.
-You should look at the *./public/data/* directory for examples.  
+You should look at the *./public/data/* directory for examples.
 
 ### Example #1 - Explanation of each field in an example API-level configuration
 

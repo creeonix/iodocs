@@ -210,6 +210,8 @@ function oauth2(req, res, next){
     if (apiConfig.oauth2) {
         var apiKey = req.body.apiKey || req.body.key,
             apiSecret = req.body.apiSecret || req.body.secret,
+            apiUsername = req.body.username,
+            apiPassword = req.body.password,
             refererURL = url.parse(req.headers.referer),
             callbackURL = refererURL.protocol + '//' + refererURL.host + '/oauth2Success/' + apiName,
             key = req.sessionID + ':' + apiName,
@@ -229,6 +231,8 @@ function oauth2(req, res, next){
             console.log('Session authed: ' + req.session[apiName]);
             console.log('apiKey: ' + apiKey);
             console.log('apiSecret: ' + apiSecret);
+            console.log('apiUsername: ' + apiUsername);
+            console.log('apiPassword: ' + apiPassword);
         }
 
         var redirectUrl;
@@ -265,7 +269,7 @@ function oauth2(req, res, next){
             var accessURL = apiConfig.oauth2.baseSite + apiConfig.oauth2.accessTokenURL;
             var basic_cred = apiKey + ':' + apiSecret;
             var encoded_basic = new Buffer(basic_cred).toString('base64');
- 
+
             var http_method = (apiConfig.oauth2.authorizationHeader == 'Y') ? "POST" : "GET";
             var header = (apiConfig.oauth2.authorizationHeader == 'Y') ? {'Authorization' : 'Basic ' + encoded_basic} : '';
             var fillerpost = query.stringify({grant_type : "client_credentials", client_id : apiKey, client_secret : apiSecret});
@@ -280,7 +284,7 @@ function oauth2(req, res, next){
             db.expire(key + ':baseURL', 1209600000);
 
             //client_credentials w/Authorization header
-            oa._request(http_method, accessURL, header, 
+            oa._request(http_method, accessURL, header,
                 fillerpost,
                 '', function(error, data, response) {
                 if (error) {
@@ -307,7 +311,63 @@ function oauth2(req, res, next){
                         db.set(key + ':refreshToken', oauth2refresh_token, redis.print);
                         db.expire(key + ':accessToken', 1209600000);
                         db.expire(key + ':refreshToken', 1209600000);
-                        
+
+                        res.send({'refresh': callbackURL});
+                    });
+                }
+            })
+        }
+        else if (apiConfig.oauth2.type == 'password') {
+            var accessURL = apiConfig.oauth2.baseSite + apiConfig.oauth2.accessTokenURL;
+            var basic_cred = apiKey + ':' + apiSecret;
+            var encoded_basic = new Buffer(basic_cred).toString('base64');
+
+            var http_method = 'POST';
+            var header = ''
+            var fillerpost = query.stringify({grant_type : "password", client_id : apiKey, client_secret : apiSecret, username: apiUsername, password: apiPassword});
+
+            db.set(key + ':apiKey', apiKey, redis.print);
+            db.set(key + ':apiSecret', apiSecret, redis.print);
+            db.set(key + ':apiUsername', apiUsername, redis.print);
+            db.set(key + ':apiPassword', apiPassword, redis.print);
+            db.set(key + ':baseURL', req.headers.referer, redis.print);
+
+            // Set expiration to same as session
+            db.expire(key + ':apiKey', 1209600000);
+            db.expire(key + ':apiSecret', 1209600000);
+            db.expire(key + ':apiUsername', 1209600000);
+            db.expire(key + ':apiPassword', 1209600000);
+            db.expire(key + ':baseURL', 1209600000);
+
+            //client_credentials w/Authorization header
+            oa._request(http_method, accessURL, header,
+                fillerpost,
+                '', function(error, data, response) {
+                if (error) {
+                    res.send("Error getting OAuth access token : " + util.inspect(error), 500);
+                }
+                else {
+                    var results;
+                    try {
+                        results = JSON.parse(data);
+                    }
+                    catch(e) {
+                        results = query.parse(data)
+                    }
+                    var oauth2access_token = results["access_token"];
+                    var oauth2refresh_token = results["refresh_token"];
+
+                    if (config.debug) {
+                        console.log('results: ' + util.inspect(results));
+                    }
+                    db.mset([key + ':access_token', oauth2access_token,
+                            key + ':refresh_token', oauth2refresh_token
+                    ], function(err, results2) {
+                        db.set(key + ':accessToken', oauth2access_token, redis.print);
+                        db.set(key + ':refreshToken', oauth2refresh_token, redis.print);
+                        db.expire(key + ':accessToken', 1209600000);
+                        db.expire(key + ':refreshToken', 1209600000);
+
                         res.send({'refresh': callbackURL});
                     });
                 }
@@ -346,6 +406,15 @@ function oauth2Success(req, res, next) {
             baseURL = result[2];
 
             if (result[3] && apiConfig.oauth2.type == 'client_credentials') {
+                req.session[apiName] = {};
+                req.session[apiName].authed = true;
+                if (config.debug) {
+                    console.log('session[apiName].authed: ' + util.inspect(req.session));
+                }
+                next();
+            }
+
+            if (result[3] && apiConfig.oauth2.type == 'password') {
                 req.session[apiName] = {};
                 req.session[apiName].authed = true;
                 if (config.debug) {
@@ -736,6 +805,7 @@ function processRequest(req, res, next) {
                         req.call = privateReqURL;
 
                         if (error) {
+                            console.log(httpMethod, privateReqURL, headers, requestBody, access_token);
                             console.log('Got error: ' + util.inspect(error));
 
                             if (error.data == 'Server Error' || error.data == '') {

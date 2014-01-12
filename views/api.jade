@@ -17,15 +17,31 @@ block content
               - else if (apiInfo.oauth2)
                   input(type='hidden', name='oauth2', value='authrequired')
 
-              - if (apiInfo.auth.defaultKey)
+              - if (apiInfo.auth && apiInfo.auth.defaultKey)
                   - var defaultKey =apiInfo.auth.defaultKey
+              - else if (apiInfo.oauth2 && apiInfo.oauth2.defaultKey)
+                  - var defaultKey =apiInfo.oauth2.defaultKey
               - else
                   - var defaultKey =''
 
-              - if (apiInfo.auth.defaultSecret)
+              - if (apiInfo.auth && apiInfo.auth.defaultSecret)
                   - var defaultSecret =apiInfo.auth.defaultSecret
+              - else if (apiInfo.oauth2 && apiInfo.oauth2.defaultSecret)
+                  - var defaultSecret =apiInfo.oauth2.defaultSecret
               - else
                   - var defaultSecret =''
+
+              - if (apiInfo.oauth2 && apiInfo.oauth2.defaultUsername)
+                  - var defaultUsername =apiInfo.oauth2.defaultUsername
+              - else
+                  - var defaultUsername =''
+
+              - if (apiInfo.oauth2 && apiInfo.oauth2.defaultPassword)
+                  - var defaultPassword =apiInfo.oauth2.defaultPassword
+              - else
+                  - var defaultPassword =''
+
+
               div
                   - if (apiInfo.oauth || apiInfo.oauth2)
                       label(for='key') Client ID
@@ -52,6 +68,14 @@ block content
               - if (authed && (apiInfo.oauth || apiInfo.oauth2))
                   script.
                       document.getElementById('oauthAuthenticated').style.display = 'block';
+              - if (apiInfo.oauth2 && apiInfo.oauth2.type == "password")
+                div(style='clear:both')
+                div
+                  label(for='username') Username
+                  input(id='username', name='username', value=defaultUsername, style='color=#EEEEEE')
+                div
+                  label(for='password') Password
+                  input(id='password', type='password', name='password', value=defaultPassword, style='color=#EEEEEE')
 
 
   div(id='controls')
@@ -83,7 +107,7 @@ block content
                       li(class='method ' + httpmethod + ' ' + secure)
                           div.title.clickable
                               - var methodLink = (endpoint.name + '-' + method.HTTPMethod + '-' + method.MethodName).replace(/\s/g, '-')
-                              a(href='#'+methodLink) 
+                              a(href='#'+methodLink)
                               span.http-method !{method.HTTPMethod}
                               span.name !{method.MethodName}
                               span.uri !{method.URI}
